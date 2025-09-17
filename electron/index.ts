@@ -1,5 +1,5 @@
 // Native
-import { join } from 'path';
+import { join } from "path";
 
 // Packages
 import {
@@ -10,9 +10,9 @@ import {
   IpcMainInvokeEvent,
   nativeTheme,
   globalShortcut,
-  clipboard
-} from 'electron';
-import isDev from 'electron-is-dev';
+  clipboard,
+} from "electron";
+import isDev from "electron-is-dev";
 
 const height = 600;
 const width = 800;
@@ -24,12 +24,14 @@ async function captureFromClipboard() {
     const originalClipboard = clipboard.readText();
 
     // Use AppleScript to copy selected text on macOS
-    if (process.platform === 'darwin') {
-      const { execSync } = require('child_process');
+    if (process.platform === "darwin") {
+      const { execSync } = require("child_process");
 
       try {
         // Execute Cmd+C using AppleScript
-        execSync(`osascript -e 'tell application "System Events" to keystroke "c" using command down'`);
+        execSync(
+          `osascript -e 'tell application "System Events" to keystroke "c" using command down'`,
+        );
 
         // Wait a moment for clipboard to update
         await new Promise((resolve) => setTimeout(resolve, 150));
@@ -37,23 +39,27 @@ async function captureFromClipboard() {
         const clipboardText = clipboard.readText();
 
         // Check if we got new text (different from original)
-        if (clipboardText && clipboardText !== originalClipboard && clipboardText.trim().length > 5) {
+        if (
+          clipboardText &&
+          clipboardText !== originalClipboard &&
+          clipboardText.trim().length > 5
+        ) {
           const promptData = {
             text: clipboardText.trim(),
-            url: 'External Application',
-            title: 'Auto-captured Text',
+            url: "External Application",
+            title: "Auto-captured Text",
             timestamp: new Date().toISOString(),
-            domain: 'external',
-            autoDetected: false
+            domain: "external",
+            autoDetected: false,
           };
 
           // eslint-disable-next-line no-console
-          console.log('Captured prompt from selected text:', promptData);
+          console.log("Captured prompt from selected text:", promptData);
 
           // Send captured prompt to any listening windows
           const allWindows = BrowserWindow.getAllWindows();
           allWindows.forEach((window) => {
-            window.webContents.send('prompt-captured', promptData);
+            window.webContents.send("prompt-captured", promptData);
           });
 
           // Show a notification that text was captured
@@ -64,33 +70,33 @@ async function captureFromClipboard() {
           // If no new selection, use existing clipboard content
           const promptData = {
             text: originalClipboard.trim(),
-            url: 'External Application',
-            title: 'Clipboard Content',
+            url: "External Application",
+            title: "Clipboard Content",
             timestamp: new Date().toISOString(),
-            domain: 'external',
-            autoDetected: false
+            domain: "external",
+            autoDetected: false,
           };
 
           // eslint-disable-next-line no-console
-          console.log('Captured prompt from existing clipboard:', promptData);
+          console.log("Captured prompt from existing clipboard:", promptData);
 
           // Send captured prompt to any listening windows
           const allWindows = BrowserWindow.getAllWindows();
           allWindows.forEach((window) => {
-            window.webContents.send('prompt-captured', promptData);
+            window.webContents.send("prompt-captured", promptData);
           });
 
           showCaptureNotification(promptData.text);
           return promptData;
         } else {
           // eslint-disable-next-line no-console
-          console.log('No text selected. Please highlight some text first.');
+          console.log("No text selected. Please highlight some text first.");
           showInstructionNotification();
           return null;
         }
       } catch (applescriptError) {
         // eslint-disable-next-line no-console
-        console.error('AppleScript execution failed:', applescriptError);
+        console.error("AppleScript execution failed:", applescriptError);
 
         // Show permission instruction
         showPermissionNotification();
@@ -100,19 +106,19 @@ async function captureFromClipboard() {
         if (clipboardText && clipboardText.trim().length > 5) {
           const promptData = {
             text: clipboardText.trim(),
-            url: 'External Application',
-            title: 'Clipboard Fallback',
+            url: "External Application",
+            title: "Clipboard Fallback",
             timestamp: new Date().toISOString(),
-            domain: 'external',
-            autoDetected: false
+            domain: "external",
+            autoDetected: false,
           };
 
           // eslint-disable-next-line no-console
-          console.log('Captured prompt from clipboard (fallback):', promptData);
+          console.log("Captured prompt from clipboard (fallback):", promptData);
 
           const allWindows = BrowserWindow.getAllWindows();
           allWindows.forEach((window) => {
-            window.webContents.send('prompt-captured', promptData);
+            window.webContents.send("prompt-captured", promptData);
           });
 
           showCaptureNotification(promptData.text);
@@ -128,19 +134,19 @@ async function captureFromClipboard() {
       if (clipboardText && clipboardText.trim().length > 5) {
         const promptData = {
           text: clipboardText.trim(),
-          url: 'External Application',
-          title: 'Clipboard Capture',
+          url: "External Application",
+          title: "Clipboard Capture",
           timestamp: new Date().toISOString(),
-          domain: 'external',
-          autoDetected: false
+          domain: "external",
+          autoDetected: false,
         };
 
         // eslint-disable-next-line no-console
-        console.log('Captured prompt from clipboard:', promptData);
+        console.log("Captured prompt from clipboard:", promptData);
 
         const allWindows = BrowserWindow.getAllWindows();
         allWindows.forEach((window) => {
-          window.webContents.send('prompt-captured', promptData);
+          window.webContents.send("prompt-captured", promptData);
         });
 
         showCaptureNotification(promptData.text);
@@ -152,7 +158,7 @@ async function captureFromClipboard() {
     }
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error('Error during text capture:', error);
+    console.error("Error during text capture:", error);
     showInstructionNotification();
     return null;
   }
@@ -160,12 +166,12 @@ async function captureFromClipboard() {
 
 // Function to show capture notification
 function showCaptureNotification(text: string) {
-  const { Notification } = require('electron');
+  const { Notification } = require("electron");
 
   if (Notification.isSupported()) {
     const notification = new Notification({
-      title: 'Prompt Captured!',
-      body: `"${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`
+      title: "Prompt Captured!",
+      body: `"${text.substring(0, 50)}${text.length > 50 ? "..." : ""}"`,
     });
 
     notification.show();
@@ -174,12 +180,12 @@ function showCaptureNotification(text: string) {
 
 // Function to show permission notification
 function showPermissionNotification() {
-  const { Notification } = require('electron');
+  const { Notification } = require("electron");
 
   if (Notification.isSupported()) {
     const notification = new Notification({
-      title: 'Enable Auto-Copy Feature',
-      body: 'Go to System Preferences → Security & Privacy → Accessibility and add this app to enable automatic text copying'
+      title: "Enable Auto-Copy Feature",
+      body: "Go to System Preferences → Security & Privacy → Accessibility and add this app to enable automatic text copying",
     });
 
     notification.show();
@@ -188,12 +194,12 @@ function showPermissionNotification() {
 
 // Function to show instruction notification
 function showInstructionNotification() {
-  const { Notification } = require('electron');
+  const { Notification } = require("electron");
 
   if (Notification.isSupported()) {
     const notification = new Notification({
-      title: 'Prompt Capture',
-      body: 'Copy text first (Cmd+C), then press Cmd+Shift+P to save it. Or enable Accessibility permissions for auto-copy.'
+      title: "Prompt Capture",
+      body: "Copy text first (Cmd+C), then press Cmd+Shift+P to save it. Or enable Accessibility permissions for auto-copy.",
     });
 
     notification.show();
@@ -214,7 +220,7 @@ async function injectContentScriptIntoWindow(window: BrowserWindow) {
     `);
   } catch (error: unknown) {
     // eslint-disable-next-line no-console
-    console.error('Failed to inject content script:', error);
+    console.error("Failed to inject content script:", error);
   }
 }
 
@@ -548,23 +554,25 @@ function createWindow() {
     resizable: true,
     fullscreenable: true,
     webPreferences: {
-      preload: join(__dirname, 'preload.js'),
+      preload: join(__dirname, "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: false, // Allow cross-origin requests for content injection
       allowRunningInsecureContent: true,
-      experimentalFeatures: true
-    }
+      experimentalFeatures: true,
+    },
   });
 
   // Enable web navigation to external sites
   window.webContents.setWindowOpenHandler(() => {
     // Allow opening external URLs in the same window
-    return { action: 'allow' };
+    return { action: "allow" };
   });
 
   const port = process.env.PORT || 3001;
-  const url = isDev ? `http://localhost:${port}` : join(__dirname, '../dist-vite/index.html');
+  const url = isDev
+    ? `http://localhost:${port}`
+    : join(__dirname, "../dist-vite/index.html");
 
   // and load the index.html of the app.
   if (isDev) {
@@ -576,37 +584,37 @@ function createWindow() {
   // window.webContents.openDevTools();
 
   // For AppBar
-  ipcMain.on('minimize', () => {
+  ipcMain.on("minimize", () => {
     // eslint-disable-next-line no-unused-expressions
     window.isMinimized() ? window.restore() : window.minimize();
     // or alternatively: win.isVisible() ? win.hide() : win.show()
   });
-  ipcMain.on('maximize', () => {
+  ipcMain.on("maximize", () => {
     // eslint-disable-next-line no-unused-expressions
     window.isMaximized() ? window.restore() : window.maximize();
   });
 
-  ipcMain.on('close', () => {
+  ipcMain.on("close", () => {
     window.close();
   });
 
-  nativeTheme.themeSource = 'dark';
+  nativeTheme.themeSource = "dark";
 
   // Register global shortcut for prompt capture
-  globalShortcut.register('CommandOrControl+Shift+P', () => {
+  globalShortcut.register("CommandOrControl+Shift+P", () => {
     // eslint-disable-next-line no-console
-    console.log('Global shortcut triggered - capturing clipboard');
+    console.log("Global shortcut triggered - capturing clipboard");
 
     // Automatically capture from clipboard
     captureFromClipboard();
   });
 
   // Auto-inject content script into all new web pages
-  window.webContents.on('did-finish-load', () => {
+  window.webContents.on("did-finish-load", () => {
     injectContentScriptIntoWindow(window);
   });
 
-  window.webContents.on('did-navigate', () => {
+  window.webContents.on("did-navigate", () => {
     injectContentScriptIntoWindow(window);
   });
 
@@ -628,8 +636,8 @@ function createOverlayWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: join(__dirname, 'preload.js')
-    }
+      preload: join(__dirname, "preload.js"),
+    },
   });
 
   // Create a simple HTML file for the overlay
@@ -796,9 +804,11 @@ function createOverlayWindow() {
 </html>
   `;
 
-  overlayWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(overlayHTML));
+  overlayWindow.loadURL(
+    "data:text/html;charset=utf-8," + encodeURIComponent(overlayHTML),
+  );
 
-  overlayWindow.on('closed', () => {
+  overlayWindow.on("closed", () => {
     overlayWindow = null;
   });
 
@@ -811,7 +821,7 @@ function createOverlayWindow() {
 app.whenReady().then(() => {
   createWindow();
 
-  app.on('activate', () => {
+  app.on("activate", () => {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -821,15 +831,15 @@ app.whenReady().then(() => {
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
+app.on("window-all-closed", () => {
   // Unregister all global shortcuts
   globalShortcut.unregisterAll();
 
-  if (process.platform !== 'darwin') app.quit();
+  if (process.platform !== "darwin") app.quit();
 });
 
 // Cleanup shortcuts when app will quit
-app.on('will-quit', () => {
+app.on("will-quit", () => {
   globalShortcut.unregisterAll();
 });
 
@@ -837,30 +847,37 @@ app.on('will-quit', () => {
 // code. You can also put them in separate files and require them here.
 
 // listen the channel `message` and resend the received message to the renderer process
-ipcMain.on('message', (event: IpcMainEvent, message: string) => {
+ipcMain.on("message", (event: IpcMainEvent, message: string) => {
   // eslint-disable-next-line no-console
   console.log(message);
-  setTimeout(() => event.sender.send('message', 'common.hiElectron'), 500);
+  setTimeout(() => event.sender.send("message", "common.hiElectron"), 500);
 });
 
 // Handle prompt capture
 ipcMain.handle(
-  'capture-prompt',
+  "capture-prompt",
   async (
     _event: IpcMainInvokeEvent,
-    promptData: { text: string; url: string; title: string; timestamp: string; domain: string; autoDetected?: boolean }
+    promptData: {
+      text: string;
+      url: string;
+      title: string;
+      timestamp: string;
+      domain: string;
+      autoDetected?: boolean;
+    },
   ) => {
     // eslint-disable-next-line no-console
-    console.log('Captured prompt:', promptData);
+    console.log("Captured prompt:", promptData);
 
     // For now, just log to console as requested
     // Later this can be saved to database/file
     return { success: true, id: Date.now() };
-  }
+  },
 );
 
 // Handle content script injection for external websites
-ipcMain.handle('inject-content-script', async () => {
+ipcMain.handle("inject-content-script", async () => {
   const focusedWindow = BrowserWindow.getFocusedWindow();
   if (!focusedWindow) return { success: false };
 
@@ -876,22 +893,23 @@ ipcMain.handle('inject-content-script', async () => {
     `);
     return { success: true };
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     // eslint-disable-next-line no-console
-    console.error('Failed to inject content script:', error);
+    console.error("Failed to inject content script:", error);
     return { success: false, error: errorMessage };
   }
 });
 
 // Handle overlay window management
-ipcMain.handle('close-overlay', async () => {
+ipcMain.handle("close-overlay", async () => {
   if (overlayWindow) {
     overlayWindow.hide();
   }
   return { success: true };
 });
 
-ipcMain.handle('show-overlay', async () => {
+ipcMain.handle("show-overlay", async () => {
   if (!overlayWindow) {
     createOverlayWindow();
   }
