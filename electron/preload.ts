@@ -1,18 +1,20 @@
-import { ipcRenderer, contextBridge } from 'electron';
+import { ipcRenderer, contextBridge } from "electron";
 
 /**
  * Using the ipcRenderer directly in the browser through the contextBridge ist not really secure.
  * I advise using the Main/api way !!
  */
-contextBridge.exposeInMainWorld('ipcRenderer', ipcRenderer);
+contextBridge.exposeInMainWorld("ipcRenderer", ipcRenderer);
 
 // eslint-disable-next-line no-undef
-function domReady(condition: DocumentReadyState[] = ['complete', 'interactive']) {
+function domReady(
+  condition: DocumentReadyState[] = ["complete", "interactive"],
+) {
   return new Promise((resolve) => {
     if (condition.includes(document.readyState)) {
       resolve(true);
     } else {
-      document.addEventListener('readystatechange', () => {
+      document.addEventListener("readystatechange", () => {
         if (condition.includes(document.readyState)) {
           resolve(true);
         }
@@ -35,7 +37,7 @@ const safeDOM = {
     }
 
     return null;
-  }
+  },
 };
 
 /**
@@ -122,13 +124,13 @@ function useLoading() {
     </div>
   `;
 
-  const oStyle = document.createElement('style');
-  const oDiv = document.createElement('div');
+  const oStyle = document.createElement("style");
+  const oDiv = document.createElement("div");
 
-  oStyle.id = 'app-loading-style';
+  oStyle.id = "app-loading-style";
   oStyle.innerHTML = styleContent;
-  oDiv.id = 'loading-to-remove';
-  oDiv.className = 'app-loading-wrap';
+  oDiv.id = "loading-to-remove";
+  oDiv.className = "app-loading-wrap";
   oDiv.innerHTML = htmlContent;
 
   return {
@@ -139,7 +141,7 @@ function useLoading() {
     removeLoading() {
       safeDOM.remove(document.head, oStyle);
       safeDOM.remove(document.body, oDiv);
-    }
+    },
   };
 }
 
@@ -163,19 +165,19 @@ const api = {
    * The function below can accessed using `window.Main.sayHello`
    */
   sendMessage: (message: string) => {
-    ipcRenderer.send('message', message);
+    ipcRenderer.send("message", message);
   },
   /**
     Here function for AppBar
    */
   Minimize: () => {
-    ipcRenderer.send('minimize');
+    ipcRenderer.send("minimize");
   },
   Maximize: () => {
-    ipcRenderer.send('maximize');
+    ipcRenderer.send("maximize");
   },
   Close: () => {
-    ipcRenderer.send('close');
+    ipcRenderer.send("close");
   },
   removeLoading: () => {
     removeLoading();
@@ -185,7 +187,31 @@ const api = {
    */
   on: (channel: string, callback: (data: any) => void) => {
     ipcRenderer.on(channel, (_, data) => callback(data));
-  }
+  },
+  /**
+   * Prompt capture functionality
+   */
+  capturePrompt: (promptData: any) => {
+    return ipcRenderer.invoke("capture-prompt", promptData);
+  },
+  injectContentScript: () => {
+    return ipcRenderer.invoke("inject-content-script");
+  },
 };
 
-contextBridge.exposeInMainWorld('Main', api);
+contextBridge.exposeInMainWorld("Main", api);
+
+// Expose a simpler API for external websites
+const electronAPI = {
+  capturePrompt: (promptData: any) => {
+    return ipcRenderer.invoke("capture-prompt", promptData);
+  },
+  closeOverlay: () => {
+    return ipcRenderer.invoke("close-overlay");
+  },
+  showOverlay: () => {
+    return ipcRenderer.invoke("show-overlay");
+  },
+};
+
+contextBridge.exposeInMainWorld("electronAPI", electronAPI);

@@ -1,148 +1,99 @@
-// Native
-import { join } from 'path';
-
-// Packages
-import {
-  BrowserWindow,
-  app,
-  ipcMain,
-  IpcMainEvent,
-  IpcMainInvokeEvent,
-  nativeTheme,
-  globalShortcut,
-  clipboard
-} from 'electron';
-import isDev from 'electron-is-dev';
-
+"use strict";
+var path = require("path");
+var electron = require("electron");
+var isDev = require("electron-is-dev");
+function _interopDefaultLegacy(e) {
+  return e && typeof e === "object" && "default" in e ? e : { "default": e };
+}
+var isDev__default = /* @__PURE__ */ _interopDefaultLegacy(isDev);
 const height = 600;
 const width = 800;
-
-// Function to capture selected text automatically
 async function captureFromClipboard() {
   try {
-    // Store current clipboard to restore later
-    const originalClipboard = clipboard.readText();
-
-    // Use AppleScript to copy selected text on macOS
-    if (process.platform === 'darwin') {
-      const { execSync } = require('child_process');
-
+    const originalClipboard = electron.clipboard.readText();
+    if (process.platform === "darwin") {
+      const { execSync } = require("child_process");
       try {
-        // Execute Cmd+C using AppleScript
         execSync(`osascript -e 'tell application "System Events" to keystroke "c" using command down'`);
-
-        // Wait a moment for clipboard to update
         await new Promise((resolve) => setTimeout(resolve, 150));
-
-        const clipboardText = clipboard.readText();
-
-        // Check if we got new text (different from original)
+        const clipboardText = electron.clipboard.readText();
         if (clipboardText && clipboardText !== originalClipboard && clipboardText.trim().length > 5) {
           const promptData = {
             text: clipboardText.trim(),
-            url: 'External Application',
-            title: 'Auto-captured Text',
+            url: "External Application",
+            title: "Auto-captured Text",
             timestamp: new Date().toISOString(),
-            domain: 'external',
+            domain: "external",
             autoDetected: false
           };
-
-          // eslint-disable-next-line no-console
-          console.log('Captured prompt from selected text:', promptData);
-
-          // Send captured prompt to any listening windows
-          const allWindows = BrowserWindow.getAllWindows();
+          console.log("Captured prompt from selected text:", promptData);
+          const allWindows = electron.BrowserWindow.getAllWindows();
           allWindows.forEach((window) => {
-            window.webContents.send('prompt-captured', promptData);
+            window.webContents.send("prompt-captured", promptData);
           });
-
-          // Show a notification that text was captured
           showCaptureNotification(promptData.text);
-
           return promptData;
         } else if (originalClipboard && originalClipboard.trim().length > 5) {
-          // If no new selection, use existing clipboard content
           const promptData = {
             text: originalClipboard.trim(),
-            url: 'External Application',
-            title: 'Clipboard Content',
+            url: "External Application",
+            title: "Clipboard Content",
             timestamp: new Date().toISOString(),
-            domain: 'external',
+            domain: "external",
             autoDetected: false
           };
-
-          // eslint-disable-next-line no-console
-          console.log('Captured prompt from existing clipboard:', promptData);
-
-          // Send captured prompt to any listening windows
-          const allWindows = BrowserWindow.getAllWindows();
+          console.log("Captured prompt from existing clipboard:", promptData);
+          const allWindows = electron.BrowserWindow.getAllWindows();
           allWindows.forEach((window) => {
-            window.webContents.send('prompt-captured', promptData);
+            window.webContents.send("prompt-captured", promptData);
           });
-
           showCaptureNotification(promptData.text);
           return promptData;
         } else {
-          // eslint-disable-next-line no-console
-          console.log('No text selected. Please highlight some text first.');
+          console.log("No text selected. Please highlight some text first.");
           showInstructionNotification();
           return null;
         }
       } catch (applescriptError) {
-        // eslint-disable-next-line no-console
-        console.error('AppleScript execution failed:', applescriptError);
-
-        // Show permission instruction
+        console.error("AppleScript execution failed:", applescriptError);
         showPermissionNotification();
-
-        // Fallback to existing clipboard
-        const clipboardText = clipboard.readText();
+        const clipboardText = electron.clipboard.readText();
         if (clipboardText && clipboardText.trim().length > 5) {
           const promptData = {
             text: clipboardText.trim(),
-            url: 'External Application',
-            title: 'Clipboard Fallback',
+            url: "External Application",
+            title: "Clipboard Fallback",
             timestamp: new Date().toISOString(),
-            domain: 'external',
+            domain: "external",
             autoDetected: false
           };
-
-          // eslint-disable-next-line no-console
-          console.log('Captured prompt from clipboard (fallback):', promptData);
-
-          const allWindows = BrowserWindow.getAllWindows();
+          console.log("Captured prompt from clipboard (fallback):", promptData);
+          const allWindows = electron.BrowserWindow.getAllWindows();
           allWindows.forEach((window) => {
-            window.webContents.send('prompt-captured', promptData);
+            window.webContents.send("prompt-captured", promptData);
           });
-
           showCaptureNotification(promptData.text);
           return promptData;
         }
-
         showInstructionNotification();
         return null;
       }
     } else {
-      // For Windows/Linux, try using clipboard directly
-      const clipboardText = clipboard.readText();
+      const clipboardText = electron.clipboard.readText();
       if (clipboardText && clipboardText.trim().length > 5) {
         const promptData = {
           text: clipboardText.trim(),
-          url: 'External Application',
-          title: 'Clipboard Capture',
+          url: "External Application",
+          title: "Clipboard Capture",
           timestamp: new Date().toISOString(),
-          domain: 'external',
+          domain: "external",
           autoDetected: false
         };
-
-        // eslint-disable-next-line no-console
-        console.log('Captured prompt from clipboard:', promptData);
-
-        const allWindows = BrowserWindow.getAllWindows();
+        console.log("Captured prompt from clipboard:", promptData);
+        const allWindows = electron.BrowserWindow.getAllWindows();
         allWindows.forEach((window) => {
-          window.webContents.send('prompt-captured', promptData);
+          window.webContents.send("prompt-captured", promptData);
         });
-
         showCaptureNotification(promptData.text);
         return promptData;
       } else {
@@ -151,57 +102,42 @@ async function captureFromClipboard() {
       }
     }
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error during text capture:', error);
+    console.error("Error during text capture:", error);
     showInstructionNotification();
     return null;
   }
 }
-
-// Function to show capture notification
-function showCaptureNotification(text: string) {
-  const { Notification } = require('electron');
-
+function showCaptureNotification(text) {
+  const { Notification } = require("electron");
   if (Notification.isSupported()) {
     const notification = new Notification({
-      title: 'Prompt Captured!',
-      body: `"${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`
+      title: "Prompt Captured!",
+      body: `"${text.substring(0, 50)}${text.length > 50 ? "..." : ""}"`
     });
-
     notification.show();
   }
 }
-
-// Function to show permission notification
 function showPermissionNotification() {
-  const { Notification } = require('electron');
-
+  const { Notification } = require("electron");
   if (Notification.isSupported()) {
     const notification = new Notification({
-      title: 'Enable Auto-Copy Feature',
-      body: 'Go to System Preferences → Security & Privacy → Accessibility and add this app to enable automatic text copying'
+      title: "Enable Auto-Copy Feature",
+      body: "Go to System Preferences \u2192 Security & Privacy \u2192 Accessibility and add this app to enable automatic text copying"
     });
-
     notification.show();
   }
 }
-
-// Function to show instruction notification
 function showInstructionNotification() {
-  const { Notification } = require('electron');
-
+  const { Notification } = require("electron");
   if (Notification.isSupported()) {
     const notification = new Notification({
-      title: 'Prompt Capture',
-      body: 'Copy text first (Cmd+C), then press Cmd+Shift+P to save it. Or enable Accessibility permissions for auto-copy.'
+      title: "Prompt Capture",
+      body: "Copy text first (Cmd+C), then press Cmd+Shift+P to save it. Or enable Accessibility permissions for auto-copy."
     });
-
     notification.show();
   }
 }
-
-// Helper function to inject content script into any window
-async function injectContentScriptIntoWindow(window: BrowserWindow) {
+async function injectContentScriptIntoWindow(window) {
   try {
     await window.webContents.executeJavaScript(`
       // Inject our prompt capture functionality
@@ -212,12 +148,10 @@ async function injectContentScriptIntoWindow(window: BrowserWindow) {
         ${getContentScriptCode()}
       }
     `);
-  } catch (error: unknown) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to inject content script:', error);
+  } catch (error) {
+    console.error("Failed to inject content script:", error);
   }
 }
-
 function getContentScriptCode() {
   return `
     let isCaptureModeActive = false;
@@ -404,7 +338,7 @@ function getContentScriptCode() {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         min-width: 80px;
       \`;
-      button.textContent = '💾 Save';
+      button.textContent = '\u{1F4BE} Save';
       
       // Add CSS for pop-in animation
       if (!document.querySelector('#prompt-save-styles')) {
@@ -536,87 +470,58 @@ function getContentScriptCode() {
     detectAIWebsites();
   `;
 }
-
 function createWindow() {
-  // Create the browser window.
-  const window = new BrowserWindow({
+  const window = new electron.BrowserWindow({
     width,
     height,
-    //  change to false to use AppBar
     frame: false,
     show: true,
     resizable: true,
     fullscreenable: true,
     webPreferences: {
-      preload: join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: false, // Allow cross-origin requests for content injection
+      webSecurity: false,
       allowRunningInsecureContent: true,
       experimentalFeatures: true
     }
   });
-
-  // Enable web navigation to external sites
   window.webContents.setWindowOpenHandler(() => {
-    // Allow opening external URLs in the same window
-    return { action: 'allow' };
+    return { action: "allow" };
   });
-
-  const port = process.env.PORT || 3001;
-  const url = isDev ? `http://localhost:${port}` : join(__dirname, '../dist-vite/index.html');
-
-  // and load the index.html of the app.
-  if (isDev) {
-    window?.loadURL(url);
+  const port = process.env.PORT || 3e3;
+  const url = isDev__default["default"] ? `http://localhost:${port}` : path.join(__dirname, "../dist-vite/index.html");
+  if (isDev__default["default"]) {
+    window == null ? void 0 : window.loadURL(url);
   } else {
-    window?.loadFile(url);
+    window == null ? void 0 : window.loadFile(url);
   }
-  // Open the DevTools.
-  // window.webContents.openDevTools();
-
-  // For AppBar
-  ipcMain.on('minimize', () => {
-    // eslint-disable-next-line no-unused-expressions
+  electron.ipcMain.on("minimize", () => {
     window.isMinimized() ? window.restore() : window.minimize();
-    // or alternatively: win.isVisible() ? win.hide() : win.show()
   });
-  ipcMain.on('maximize', () => {
-    // eslint-disable-next-line no-unused-expressions
+  electron.ipcMain.on("maximize", () => {
     window.isMaximized() ? window.restore() : window.maximize();
   });
-
-  ipcMain.on('close', () => {
+  electron.ipcMain.on("close", () => {
     window.close();
   });
-
-  nativeTheme.themeSource = 'dark';
-
-  // Register global shortcut for prompt capture
-  globalShortcut.register('CommandOrControl+Shift+P', () => {
-    // eslint-disable-next-line no-console
-    console.log('Global shortcut triggered - capturing clipboard');
-
-    // Automatically capture from clipboard
+  electron.nativeTheme.themeSource = "dark";
+  electron.globalShortcut.register("CommandOrControl+Shift+P", () => {
+    console.log("Global shortcut triggered - capturing clipboard");
     captureFromClipboard();
   });
-
-  // Auto-inject content script into all new web pages
-  window.webContents.on('did-finish-load', () => {
+  window.webContents.on("did-finish-load", () => {
     injectContentScriptIntoWindow(window);
   });
-
-  window.webContents.on('did-navigate', () => {
+  window.webContents.on("did-navigate", () => {
     injectContentScriptIntoWindow(window);
   });
-
   return window;
 }
-
-let overlayWindow: BrowserWindow | null = null;
-
+let overlayWindow = null;
 function createOverlayWindow() {
-  overlayWindow = new BrowserWindow({
+  overlayWindow = new electron.BrowserWindow({
     width: 500,
     height: 250,
     frame: false,
@@ -628,11 +533,9 @@ function createOverlayWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: join(__dirname, 'preload.js')
+      preload: path.join(__dirname, "preload.js")
     }
   });
-
-  // Create a simple HTML file for the overlay
   const overlayHTML = `
 <!DOCTYPE html>
 <html>
@@ -725,7 +628,7 @@ function createOverlayWindow() {
 <body>
   <button class="close-btn" onclick="closeOverlay()">&times;</button>
   
-  <div class="title">🎯 Prompt Capture</div>
+  <div class="title">\u{1F3AF} Prompt Capture</div>
   
   <div class="instructions">
     Select text anywhere on your screen, copy it (Cmd+C/Ctrl+C),<br>
@@ -756,7 +659,7 @@ function createOverlayWindow() {
       
       if (text && text.trim().length > 5) {
         hasContent = true;
-        captureArea.innerHTML = '<div style="color: #90EE90; font-weight: bold;">✓ Text captured successfully!</div>';
+        captureArea.innerHTML = '<div style="color: #90EE90; font-weight: bold;">\u2713 Text captured successfully!</div>';
         captureArea.style.background = 'rgba(144, 238, 144, 0.2)';
         captureArea.style.borderColor = 'rgba(144, 238, 144, 0.6)';
         
@@ -791,79 +694,43 @@ function createOverlayWindow() {
     setTimeout(() => {
       captureArea.focus();
     }, 100);
-  </script>
+  <\/script>
 </body>
 </html>
   `;
-
-  overlayWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(overlayHTML));
-
-  overlayWindow.on('closed', () => {
+  overlayWindow.loadURL("data:text/html;charset=utf-8," + encodeURIComponent(overlayHTML));
+  overlayWindow.on("closed", () => {
     overlayWindow = null;
   });
-
   return overlayWindow;
 }
-
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+electron.app.whenReady().then(() => {
   createWindow();
-
-  app.on('activate', () => {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  electron.app.on("activate", () => {
+    if (electron.BrowserWindow.getAllWindows().length === 0)
+      createWindow();
   });
 });
-
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  // Unregister all global shortcuts
-  globalShortcut.unregisterAll();
-
-  if (process.platform !== 'darwin') app.quit();
+electron.app.on("window-all-closed", () => {
+  electron.globalShortcut.unregisterAll();
+  if (process.platform !== "darwin")
+    electron.app.quit();
 });
-
-// Cleanup shortcuts when app will quit
-app.on('will-quit', () => {
-  globalShortcut.unregisterAll();
+electron.app.on("will-quit", () => {
+  electron.globalShortcut.unregisterAll();
 });
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
-
-// listen the channel `message` and resend the received message to the renderer process
-ipcMain.on('message', (event: IpcMainEvent, message: string) => {
-  // eslint-disable-next-line no-console
+electron.ipcMain.on("message", (event, message) => {
   console.log(message);
-  setTimeout(() => event.sender.send('message', 'common.hiElectron'), 500);
+  setTimeout(() => event.sender.send("message", "common.hiElectron"), 500);
 });
-
-// Handle prompt capture
-ipcMain.handle(
-  'capture-prompt',
-  async (
-    _event: IpcMainInvokeEvent,
-    promptData: { text: string; url: string; title: string; timestamp: string; domain: string; autoDetected?: boolean }
-  ) => {
-    // eslint-disable-next-line no-console
-    console.log('Captured prompt:', promptData);
-
-    // For now, just log to console as requested
-    // Later this can be saved to database/file
-    return { success: true, id: Date.now() };
-  }
-);
-
-// Handle content script injection for external websites
-ipcMain.handle('inject-content-script', async () => {
-  const focusedWindow = BrowserWindow.getFocusedWindow();
-  if (!focusedWindow) return { success: false };
-
+electron.ipcMain.handle("capture-prompt", async (_event, promptData) => {
+  console.log("Captured prompt:", promptData);
+  return { success: true, id: Date.now() };
+});
+electron.ipcMain.handle("inject-content-script", async () => {
+  const focusedWindow = electron.BrowserWindow.getFocusedWindow();
+  if (!focusedWindow)
+    return { success: false };
   try {
     await focusedWindow.webContents.executeJavaScript(`
       // Inject our prompt capture functionality
@@ -875,27 +742,22 @@ ipcMain.handle('inject-content-script', async () => {
       }
     `);
     return { success: true };
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    // eslint-disable-next-line no-console
-    console.error('Failed to inject content script:', error);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Failed to inject content script:", error);
     return { success: false, error: errorMessage };
   }
 });
-
-// Handle overlay window management
-ipcMain.handle('close-overlay', async () => {
+electron.ipcMain.handle("close-overlay", async () => {
   if (overlayWindow) {
     overlayWindow.hide();
   }
   return { success: true };
 });
-
-ipcMain.handle('show-overlay', async () => {
+electron.ipcMain.handle("show-overlay", async () => {
   if (!overlayWindow) {
     createOverlayWindow();
   }
-
   if (overlayWindow) {
     overlayWindow.show();
     overlayWindow.center();
@@ -903,3 +765,4 @@ ipcMain.handle('show-overlay', async () => {
   }
   return { success: true };
 });
+//# sourceMappingURL=index.js.map

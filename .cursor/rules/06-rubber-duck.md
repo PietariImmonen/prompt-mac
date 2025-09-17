@@ -1,0 +1,216 @@
+---
+description: User has questions on how code or functionality works or we run into over 3 attempts at fixing the same code.
+globs:
+alwaysApply: false
+---
+
+# Rubber Duck Debugging Partner
+
+## 🎯 Purpose
+
+Act as a rubber duck debugging partner to help understand the **why** behind code behavior, not just the **how**.
+
+## 🔄 3-Error Circuit Breaker
+
+**If we hit 3 consecutive errors on the same problem → STOP implementing and audit the scenario**
+
+### Input/Output/State Layer Audit
+
+1. **Input Layer** - What data/parameters are we receiving?
+2. **Processing Layer** - What transformations are happening?
+3. **Output Layer** - What are we producing vs. what's expected?
+4. **State Layer** - What's the current system/application state?
+
+### 7 Common Error Causes (Check in Order)
+
+1. **Import/Dependency Issues** - Missing imports, wrong module paths, dependency not available
+2. **API Misunderstanding** - Outdated patterns, wrong method signatures, deprecated functions
+3. **Data Type Mismatch** - Wrong types, formats, or structures
+4. **State/Lifecycle Confusion** - Component lifecycle, async timing, initialization order
+5. **Context/Scope Issues** - Variables not accessible, wrong execution context
+6. **Path/File Assumptions** - Incorrect file locations, non-existent paths
+7. **Copy-Paste Adaptation Errors** - Code from different context not properly adjusted
+
+### Audit Questions
+
+**Input Analysis:**
+
+- What exactly are we passing in? (Log the actual values)
+- Is the data format what we expect? (JSON, string, object, etc.)
+- Are required fields present and valid?
+
+**Output Analysis:**
+
+- What are we getting vs. what we expect?
+- Where exactly does the output diverge?
+- Are error messages giving us specific clues?
+
+**State Analysis:**
+
+- What's the application state when this runs?
+- Are dependencies initialized/available?
+- Is this running in the expected context/environment?
+
+**LLM-Specific Checks:**
+
+- Are all imports actually available? (Use `codebase_search` to verify)
+- Is this API usage current? (Check documentation vs. implementation)
+- Did code get copied from a different context? (Different platforms, versions)
+- Are file paths real? (Use file search tools to confirm)
+
+## 💬 Communication Style
+
+- **Plain English explanations** - Why something works the way it does
+- **Break down complex logic** into understandable concepts
+- **ASCII diagrams** when they help communicate flow
+- **Concrete examples** and analogies
+- **Ask clarifying questions** to ensure understanding
+
+## 🔍 Focus Areas
+
+- Code logic and flow
+- Data transformations
+- System interactions
+- Edge cases and error handling
+- Performance implications
+- Architecture decisions
+
+## 🛠️ Resolution Protocol
+
+After audit identifies root cause:
+
+1. **Fix the actual problem** (not symptoms)
+2. **Add prevention measures** - Better error handling, validation, logging
+3. **Document the lesson** - Update comments, add tests
+4. **Propose improvements** - Architecture changes, refactoring, better tooling
+
+## Platform-Specific Debugging Patterns
+
+### Web Development
+
+```javascript
+// Common debugging approaches
+console.log('State at point X:', state);
+console.trace('Call stack to this point');
+debugger; // Browser debugging
+
+// Network issues
+fetch('/api/endpoint')
+  .then((response) => {
+    console.log('Response status:', response.status);
+    return response.json();
+  })
+  .catch((error) => console.error('Fetch failed:', error));
+```
+
+### Mobile Development (iOS/Swift)
+
+```swift
+// Debugging patterns
+print("🔍 Debug: \\(variable)")
+os_log("Network request: %@", log: .default, type: .debug, endpoint)
+
+// Breakpoint alternatives
+assert(condition, "Expected condition failed")
+precondition(condition, "Critical condition not met")
+```
+
+### Backend/API Development
+
+```python
+# Python debugging
+import logging
+logging.debug(f"Processing request: {request_data}")
+
+# API debugging
+import pprint
+pprint.pprint(response_data)
+
+# Database debugging
+print(f"SQL Query: {query}")
+print(f"Parameters: {params}")
+```
+
+## Common Anti-Patterns and Solutions
+
+### Anti-Pattern: "It Should Work"
+
+```markdown
+❌ "This code should work, I don't understand why it's failing"
+✅ "Let me trace exactly what's happening step by step"
+
+- Add logging at each step
+- Verify assumptions with actual data
+- Check each transformation point
+```
+
+### Anti-Pattern: Changing Multiple Things
+
+```markdown
+❌ Changing 5 things at once hoping one fixes it
+✅ Change one thing, test, observe result, then proceed
+
+- Isolate variables
+- Make incremental changes
+- Verify each change's impact
+```
+
+### Anti-Pattern: Assuming Context
+
+```markdown
+❌ "This works in environment X, so it should work here"
+✅ "Let me verify the differences between environments"
+
+- Check dependencies versions
+- Verify configuration differences
+- Test assumptions about available APIs/libraries
+```
+
+## Debugging Workflow Template
+
+```markdown
+## Problem Statement
+
+**What's expected:** [Clear description of expected behavior]
+**What's happening:** [Actual observed behavior]
+**Error messages:** [Exact error messages or symptoms]
+
+## Environment
+
+- **Platform/Framework:** {{PLATFORM}}
+- **Version:** {{VERSION}}
+- **Dependencies:** {{KEY_DEPENDENCIES}}
+- **Configuration:** {{RELEVANT_CONFIG}}
+
+## Investigation Steps
+
+1. **Reproduce:** Can I consistently reproduce the issue?
+2. **Isolate:** What's the minimal case that shows the problem?
+3. **Trace:** What's the exact execution path?
+4. **Verify:** Are my assumptions about the code correct?
+
+## Findings
+
+**Root Cause:** [What's actually causing the issue]
+**Why it happens:** [Explanation of the underlying reason]
+**Fix approach:** [How to resolve it properly]
+
+## Prevention
+
+**How to avoid this in future:** [Process or code changes]
+**Warning signs:** [What to watch out for]
+```
+
+## Learning Questions After Resolution
+
+1. **What assumption was wrong?** - Help identify common blind spots
+2. **How could we have caught this earlier?** - Improve debugging process
+3. **What's the underlying principle?** - Build deeper understanding
+4. **Where else might this pattern occur?** - Prevent similar issues
+
+## When to Escalate Beyond Rubber Duck
+
+- **After 30 minutes** of debugging without progress
+- **When the problem indicates** a deeper architectural issue
+- **When the fix requires** significant refactoring or redesign
+- **When you discover** the issue affects other parts of the system

@@ -1,0 +1,240 @@
+---
+description: User wants to refactor existing code or documentation for better maintainability.
+globs:
+alwaysApply: false
+---
+
+# Refactoring Implementation Plan Rules
+
+## 🎯 Goal: Safely refactor existing code/docs without breaking functionality
+
+## 🚨 MANDATORY REFACTORING VALIDATION GATES
+
+### Gate 1: Blast Radius Assessment (BEFORE any planning)
+
+- [ ] **Run dependency analysis** for all code to be changed/deleted
+- [ ] **Document actual blast radius** with grep output (not estimates)
+- [ ] **Apply decision matrix** based on scope findings
+
+```bash
+# Mandatory commands for every refactor (customize for your file extensions)
+grep -rn "ClassToRefactor" . > dependencies.txt
+grep -rn "methodToChange" . > method-usage.txt
+find . -name "*.{{EXTENSION1}}" -exec grep -l "target_pattern" {} \\; > affected-files-1.txt
+find . -name "*.{{EXTENSION2}}" -exec grep -l "target_pattern" {} \\; > affected-files-2.txt
+
+# Blast radius decision matrix
+wc -l dependencies.txt
+# <10 lines: Standard refactor process
+# 10-20 lines: Phased approach required
+# >20 lines: STOP - Consider architectural redesign instead
+```
+
+### Gate 2: Refactoring Assumptions Validation
+
+- [ ] **Refactoring Assumptions section exists** in PRD (search for "## Refactoring Assumptions")
+- [ ] **Section has >5 items** covering dependencies, coupling, usage patterns
+- [ ] **Each assumption has confidence level** and blast radius estimate
+
+**If ANY check fails:**
+
+```
+❌ STOP - PRD Missing Refactoring-Specific Assumptions
+👈 RETURN TO: @02-prd-create.mdc to add refactoring assumptions
+🚫 FORBIDDEN: Proceeding without dependency analysis
+```
+
+## 📋 Required Refactoring Assumptions (for PRD Creation)
+
+**Add these to Implementation Assumptions section when refactoring:**
+
+### Dependency Analysis Assumptions (MUST AUDIT)
+
+- **Usage Count**: How many files use target code? (UNCERTAIN - estimate X files)
+- **Call Patterns**: How is target code invoked? (ASSUMED - haven't traced all call sites)
+- **Import Dependencies**: What depends on target imports? (UNKNOWN - need analysis)
+- **Inheritance Chain**: What extends/implements target? (HOPED - minimal inheritance)
+
+### Impact Analysis Assumptions (MUST AUDIT)
+
+- **Platform Differences**: Platform-specific usage variations? (UNCERTAIN - haven't checked conditionals)
+- **Data Flow Changes**: What breaks with signature changes? (ASSUMED - minimal impact)
+- **Test Coverage**: Are changes covered by existing tests? (HOPED - good coverage)
+- **Build Dependencies**: Will refactor break compilation? (UNCERTAIN - need incremental testing)
+
+### Refactoring Strategy Assumptions (MUST AUDIT)
+
+- **Replacement Pattern**: Can we use existing alternatives? (LIKELY - based on similar code)
+- **Migration Path**: Can changes be made incrementally? (UNCERTAIN - depends on coupling)
+- **Rollback Safety**: Can we revert if issues arise? (ASSUMED - with proper git strategy)
+
+### Example Refactoring Assumptions:
+
+```markdown
+## 🔧 Refactoring Assumptions
+
+### Dependency Analysis (MUST AUDIT)
+
+- Usage Count: `{{TargetClass}}` used in ~5 files (UNCERTAIN - might be 15+)
+- Call Patterns: Mostly dependency injection (ASSUMED - haven't verified all usage)
+- Platform Differences: Same usage across platforms (HOPED - need to check conditionals)
+
+### Impact Analysis (MUST AUDIT)
+
+- Data Flow: Changing to {{NewPattern}} won't break responses (LIKELY - standard patterns)
+- Test Coverage: {{TargetArea}} has unit tests (UNCERTAIN - need to verify)
+- Build Safety: Can replace incrementally (ASSUMED - depends on coupling)
+
+### Strategy Assumptions (MUST AUDIT)
+
+- Replacement: {{NewTechnology}} can handle all current features (LIKELY - standard capabilities)
+- Migration: Can update one file at a time (UNCERTAIN - depends on shared state)
+```
+
+## 🔍 Refactoring-Specific Audit Protocol
+
+### Pre-Refactoring Reality Check (Mandatory 30-min gate)
+
+```bash
+# 1. REPRODUCE CURRENT FUNCTIONALITY (10 min)
+# Test existing behavior end-to-end, document what works
+# Evidence: Current system working as expected
+
+# 2. MAP ALL DEPENDENCIES (15 min)
+grep -rn "target_code" . > complete-usage.txt
+# Count actual usage, identify unexpected dependencies
+# Evidence: Real blast radius, not estimated
+
+# 3. BUILD SAFETY ASSESSMENT (5 min)
+# Can target code be changed without breaking build?
+# Decision: Incremental → Phased → Redesign (try in order)
+```
+
+## Decision Matrix for Refactoring Scope
+
+**<10 files affected**: Standard incremental replacement
+
+- Use existing workflow: @02-prd-create.mdc → @03-prd-review.mdc → @04-prd-execute.mdc
+- Add refactoring assumptions to PRD
+- Proceed with confidence
+
+**10-20 files affected**: Phased refactoring required
+
+- Mandatory blast radius documentation
+- Multi-phase replacement strategy
+- Build validation after each phase
+- User approval between phases
+
+**>20 files affected**: STOP - Architectural redesign needed
+
+- Current refactor approach insufficient
+- Consider system-wide redesign instead
+- May need separate architecture planning process
+
+## Incremental Replacement Safety Protocol
+
+### Phase Structure for Refactoring
+
+```markdown
+❌ DANGEROUS: Phase 1: Delete old code → Phase 2: Fix compilation errors
+✅ SAFE:
+Phase 1: Create new implementation alongside old code
+Phase 2: Replace usage in subset of files, verify builds
+Phase 3: Replace remaining usage, verify functionality
+Phase 4: Remove unused old code (zero references confirmed)
+```
+
+### Build Validation Requirements
+
+- **Build MUST pass** after every single file change
+- **Never accumulate** multiple compilation errors
+- **Test affected functionality** after each replacement
+- **Git commit** after each successful file change
+
+## Common Refactoring Anti-Patterns
+
+**Process Anti-Patterns:**
+
+- ❌ Estimate blast radius without running grep commands
+- ❌ Delete first, fix compilation errors later
+- ❌ Change multiple files before building
+- ❌ Assume "it's probably only used in X places"
+
+**Planning Anti-Patterns:**
+
+- ❌ Skip dependency analysis because "I know the code"
+- ❌ Proceed without refactoring assumptions in PRD
+- ❌ Bypass blast radius assessment for "simple" changes
+- ❌ Refactor multiple components simultaneously
+
+## Integration with Main Pipeline
+
+**Refactoring Workflow:**
+
+1. **Gate 1**: Blast radius assessment (this rule)
+2. **PRD Creation**: @02-prd-create.mdc with refactoring assumptions
+3. **PRD Review**: @03-prd-review.mdc validates refactoring assumptions
+4. **Execution**: @04-prd-execute.mdc with incremental replacement
+
+**Key Difference**: Refactoring starts with dependency analysis, additive development starts with feature requirements.
+
+## 🚨 REFACTORING SAFETY PROTOCOLS
+
+### For Plans Involving Code Deletion or Major Refactoring
+
+**MANDATORY Pre-Deletion Dependency Analysis:**
+
+```bash
+# ALWAYS run these commands BEFORE deleting any code (customize extensions):
+grep -rn "ClassNameToDelete" {{PROJECT_ROOT}}/ > dependencies.txt
+grep -rn "FunctionToDelete" {{PROJECT_ROOT}}/ > dependencies.txt
+grep -rn "FileToDelete" {{PROJECT_ROOT}}/ > dependencies.txt
+```
+
+**NEVER Delete Code That Has References Elsewhere**
+
+**Phase Structure for Refactoring Plans:**
+
+```markdown
+❌ BAD: Phase 1: Delete classes → Phase 2: Fix compilation errors
+✅ GOOD:
+Phase 1: Replace all references to old code with new implementation
+Phase 2: Verify all references updated and builds pass
+Phase 3: Remove now-unused old code (should be zero references)
+```
+
+**Build Validation Requirements:**
+
+- Build MUST pass after every single file change
+- Use `{{BUILD_COMMAND}}` (customize for your build system)
+- Never accumulate multiple compilation errors to fix "later"
+
+**Incremental Replacement Strategy:**
+
+1. Find ALL references to code being changed
+2. Replace references ONE FILE AT A TIME
+3. Build and verify after each file
+4. Only delete original code when zero references remain
+
+**Anti-Patterns to Avoid:**
+
+- ❌ Delete first, fix compilation errors later
+- ❌ Change multiple files before building
+- ❌ Assume "it's probably not used elsewhere"
+- ❌ Bulk find-and-replace without understanding context
+
+**Required Checklist for Refactoring Plans:**
+
+- [ ] Dependency analysis completed for all code to be deleted
+- [ ] Replacement strategy defined for each reference
+- [ ] Build validation after each incremental change
+- [ ] Rollback plan if compilation errors become unmanageable
+- [ ] No deletion until zero references confirmed
+
+### Success Metrics for Large Refactors
+
+- **Error Count**: Target <2 production errors during major refactors
+- **Rollback Requirement**: Zero rollbacks needed if properly phased
+- **Data Integrity**: 100% existing functionality maintained
+- **Documentation Quality**: All changes auditable via file:line references
+- **Team Confidence**: Reviewers can independently verify all claims
